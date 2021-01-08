@@ -1,7 +1,7 @@
 ---
 title: Pandoc User's Guide
 author: John MacFarlane
-date: December 17, 2020
+date: December 29, 2020
 ---
 
 # Synopsis
@@ -1506,6 +1506,16 @@ input-files:
 - preface.md
 - content.md
 # or you may use input-file: with a single value
+
+# Include options from the specified defaults files.
+# The files will be searched for first in the working directory
+# and then in the defaults subdirectory of the user data directory.
+# The files are included in the same order in which they appear in
+# the list. Options specified in this defaults file always have
+# priority over the included ones.
+defaults:
+- defsA
+- defsB
 
 template: letter
 standalone: true
@@ -4463,8 +4473,8 @@ into
 
 whereas `Markdown.pl` will preserve it as is.
 
-There is one exception to this rule:  text between `<script>` and
-`<style>` tags is not interpreted as Markdown.
+There is one exception to this rule:  text between `<script>`,
+`<style>`, and `<textarea>` tags is not interpreted as Markdown.
 
 This departure from standard Markdown should make it easier to mix
 Markdown with HTML block elements.  For example, one can surround
@@ -5358,6 +5368,34 @@ example:
         }
       }
     }
+
+
+## Citations in note styles
+
+Pandoc's citation processing is designed to allow you to
+move between author-date, numerical, and note styles without
+modifying the markdown source.  When you're using a note
+style, avoid inserting footnotes manually. Instead, insert
+citations just as you would in an author-date style---for
+example,
+
+    Blah blah [@foo, p. 33].
+
+The footnote will be created automatically. Pandoc will take
+care of removing the space and moving the note before or
+after the period, depending on the setting of
+`notes-after-punctuation`, as described below in [Other relevant
+metadata fields].
+
+In some cases you may need to put a citation inside a regular
+footnote.  Normal citations in footnotes (such as `[@foo, p.
+33]`) will be rendered in parentheses.  In-text citations (such
+as `@foo [p. 33]`) will be rendered without parentheses. (A
+comma will be added if appropriate.)  Thus:
+
+    [^1]:  Some studies [@foo; @bar, p. 33] show that
+    frubulicious zoosnaps are quantical.  For a survey
+    of the literature, see @baz [chap. 1].
 
 ## Raw content in a style
 
@@ -6291,7 +6329,7 @@ application, here are some things to keep in mind:
 
 # Authors
 
-Copyright 2006--2020 John MacFarlane (jgm@berkeley.edu). Released
+Copyright 2006--2021 John MacFarlane (jgm@berkeley.edu). Released
 under the [GPL], version 2 or greater.  This software carries no
 warranty of any kind.  (See COPYRIGHT for full copyright and
 warranty notices.) For a full list of contributors, see the file

@@ -1,7 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {- |
    Module      : Tests.Old
-   Copyright   : © 2006-2020 John MacFarlane
+   Copyright   : © 2006-2021 John MacFarlane
    License     : GNU GPL, version 2 or above
 
    Maintainer  : John MacFarlane <jgm@berkeley@edu>
@@ -58,7 +58,7 @@ tests pandocPath =
     ]
   , testGroup "latex"
     [ testGroup "writer"
-        (writerTests' "latex" ++ lhsWriterTests' "latex")
+        (extWriterTests' "latex" ++ lhsWriterTests' "latex")
     , testGroup "reader"
       [ test' "basic" ["-r", "latex+raw_tex", "-w", "native", "-s"]
         "latex-reader.latex" "latex-reader.native"

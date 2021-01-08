@@ -6,7 +6,7 @@
 {-# LANGUAGE ViewPatterns        #-}
 {- |
    Module      : Text.Pandoc.Writers.HTML
-   Copyright   : Copyright (C) 2006-2020 John MacFarlane
+   Copyright   : Copyright (C) 2006-2021 John MacFarlane
    License     : GNU GPL, version 2 or above
 
    Maintainer  : John MacFarlane <jgm@berkeley.edu>
@@ -254,6 +254,8 @@ pandocToHtml opts (Pandoc meta blocks) = do
   let stringifyHTML = escapeStringForXML . stringify
   let authsMeta = map stringifyHTML $ docAuthors meta
   let dateMeta  = stringifyHTML $ docDate meta
+  let descriptionMeta = escapeStringForXML $
+                          lookupMetaString "description" meta
   slideVariant <- gets stSlideVariant
   let sects = adjustNumbers opts $
               makeSections (writerNumberSections opts) Nothing $
@@ -352,6 +354,7 @@ pandocToHtml opts (Pandoc meta blocks) = do
                   defField "author-meta" authsMeta .
                   maybe id (defField "date-meta")
                     (normalizeDate dateMeta) .
+                  defField "description-meta" descriptionMeta .
                   defField "pagetitle"
                       (stringifyHTML . docTitle $ meta) .
                   defField "idprefix" (writerIdentifierPrefix opts) .
@@ -778,12 +781,17 @@ blockToHtml opts (Div attr@(ident, classes, kvs') bs) = do
       classes' = case slideVariant of
         NoSlides -> classes
         _ -> filter (\k -> k /= "incremental" && k /= "nonincremental") classes
+  let paraToPlain (Para ils) = Plain ils
+      paraToPlain x          = x
+  let bs' = if "csl-entry" `elem` classes'
+               then walk paraToPlain bs
+               else bs
   contents <- if "columns" `elem` classes'
                  then -- we don't use blockListToHtml because it inserts
                       -- a newline between the column divs, which throws
                       -- off widths! see #4028
-                      mconcat <$> mapM (blockToHtml opts) bs
-                 else blockListToHtml opts' bs
+                      mconcat <$> mapM (blockToHtml opts) bs'
+                 else blockListToHtml opts' bs'
   let contents' = nl opts >> contents >> nl opts
   let (divtag, classes'') = if html5 && "section" `elem` classes'
                             then (H5.section, filter (/= "section") classes')
@@ -1447,11 +1455,15 @@ blockListToNote opts ref blocks = do
                     else let lastBlock   = last blocks
                              otherBlocks = init blocks
                          in  case lastBlock of
-                                  (Para lst)  -> otherBlocks ++
+                                  Para [Image _ _ (_,tit)]
+                                      | "fig:" `T.isPrefixOf` tit
+                                            -> otherBlocks ++ [lastBlock,
+                                                  Plain backlink]
+                                  Para lst  -> otherBlocks ++
                                                  [Para (lst ++ backlink)]
-                                  (Plain lst) -> otherBlocks ++
+                                  Plain lst -> otherBlocks ++
                                                  [Plain (lst ++ backlink)]
-                                  _           -> otherBlocks ++ [lastBlock,
+                                  _         -> otherBlocks ++ [lastBlock,
                                                  Plain backlink]
   contents <- blockListToHtml opts blocks'
   let noteItem = H.li ! prefixedId opts ("fn" <> ref) $ contents
